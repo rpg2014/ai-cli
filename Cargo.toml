@@ -23,6 +23,7 @@ tokio = { version = "1.36.0", features = ["full"] }
 aws-sdk-bedrockruntime = "1.61.0"
 tracing-log = "0.2.0"
 config = "0.14.1"
+serde = "1.0.215"
 
 [features]
 accelerate = ["dep:accelerate-src", "candle-core/accelerate", "candle-nn/accelerate", "candle-transformers/accelerate"]

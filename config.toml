@@ -1,0 +1,17 @@
+# Example config file for AI CLI
+
+verbosity = 'info'
+
+[model_config]
+# temperature = 0.7
+# top_p = 0.9
+# seed = 42
+# sample_len = 100
+# # model_id = "gpt2"
+# revision = "main"
+# # weight_file = "pytorch_model.bin"
+# # tokenizer = "tokenizer.json"
+# repeat_penalty = 1.1
+# repeat_last_n = 64
+# dtype = "f32"
+# verbose_prompt

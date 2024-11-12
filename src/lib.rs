@@ -3,12 +3,15 @@
 mod command;
 mod text_generation;
 mod token_output_stream;
+mod settings;
 // ... other modules
 
 // This is the only export from the crate. It is marked hidden and
 // is not part of the public API.
 #[doc(hidden)]
-pub use command::AiCli;
+pub use command::{AiCli,AiCliArgs};
+#[doc(hidden)]
+pub use settings::Settings;
 use candle_core::utils::{cuda_is_available, metal_is_available};
 use candle_core::{Device, Result, Tensor};
 use tracing::warn;

@@ -4,7 +4,7 @@ extern crate intel_mkl_src;
 #[cfg(feature = "accelerate")]
 extern crate accelerate_src;
 
-use ai_cli::AiCli;
+use ai_cli::{AiCliArgs, AiCli, Settings};
 use anyhow::Result;
 use clap::Parser;
 use tracing::info;
@@ -16,13 +16,23 @@ fn main() -> Result<()> {
     use tracing_subscriber::prelude::*;
     
     let start = std::time::Instant::now();
-    info!("Beginning script");
-    let ai_cli = AiCli::parse();
+    
+    let ai_cli_args = AiCliArgs::parse();
+    
+    let settings = Settings::new()?;
+    //convert settings.verbosity String into Levelfilter
+    // set filter to ai_cli if present, else, from settings
+    let log_level_filter = ai_cli_args
+        .verbose
+        .log_level_filter();
+        
+        
+        
     // a builder for `FmtSubscriber`.
     let subscriber = FmtSubscriber::builder()
         // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
         // will be written to stdout.
-        .with_max_level(ai_cli.verbose.log_level_filter().as_trace())
+        .with_max_level(log_level_filter.as_trace())
         // .with_line_number(false)
         // .pretty()
         // .with_target(true)
@@ -30,7 +40,8 @@ fn main() -> Result<()> {
         .finish();
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default subscriber failed");
-    let _guard = if ai_cli.tracing {
+    info!("Initialized args, settings, and logging in {:?}", start.elapsed());
+    let _guard = if ai_cli_args.tracing {
         let (chrome_layer, guard) = ChromeLayerBuilder::new().build();
         tracing_subscriber::registry().with(chrome_layer).init();
         Some(guard)
@@ -38,10 +49,10 @@ fn main() -> Result<()> {
         None
     };
     
-    info!("Parsed arguments in {:?}", start.elapsed());
-    info!("Args: {ai_cli:?}");
-   
-    ai_cli.exec(&start)?;
+    
+    let ai_cli = AiCli::new(settings, ai_cli_args, Some(start));
+    
+    ai_cli.exec()?;
     
     Ok(())
 }
