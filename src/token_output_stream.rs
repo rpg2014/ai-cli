@@ -42,7 +42,7 @@ impl TokenOutputStream {
     /// Returns Some(String) if a complete word is formed, None otherwise
     /// Implementation based on Hugging Face's text-generation-inference https://github.com/huggingface/text-generation-inference/blob/5ba53d44a18983a4de32d122f4cb46f4a17d9ef6/server/text_generation_server/models/model.py#L68
     pub fn next_token(&mut self, token: u32) -> Result<Option<String>> {
-        // Get previously decoded text 
+        // Get previously decoded text
         let prev_text = if self.tokens.is_empty() {
             String::new()
         } else {

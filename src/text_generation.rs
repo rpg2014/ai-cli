@@ -1,17 +1,16 @@
 use crate::token_output_stream;
 
-use candle_transformers::generation::LogitsProcessor;
-use token_output_stream::TokenOutputStream;
-use candle_transformers::models::mixformer::{Config, MixFormerSequentialForCausalLM as MixFormer};
-use candle_transformers::models::phi::{Config as PhiConfig, Model as Phi};
-use candle_transformers::models::phi3::{Config as Phi3Config, Model as Phi3};
-use candle_transformers::models::quantized_mixformer::MixFormerSequentialForCausalLM as QMixFormer;
-use tokenizers::Tokenizer;
-use candle_core::{DType, Device, IndexOp, Tensor};
 use anyhow::{Error as E, Result};
+use candle_core::{DType, Device, IndexOp, Tensor};
+use candle_transformers::generation::LogitsProcessor;
+use candle_transformers::models::mixformer::MixFormerSequentialForCausalLM as MixFormer;
+use candle_transformers::models::phi::Model as Phi;
+use candle_transformers::models::phi3::Model as Phi3;
+use candle_transformers::models::quantized_mixformer::MixFormerSequentialForCausalLM as QMixFormer;
+use token_output_stream::TokenOutputStream;
+use tokenizers::Tokenizer;
 use tokio::io::AsyncWriteExt;
 use tracing::{debug, info};
-
 
 pub enum Model {
     MixFormer(MixFormer),
@@ -56,14 +55,14 @@ impl TextGeneration {
     }
 
     /// Async runs the text generation model on the given prompt for a specified number of tokens
-    /// 
+    ///
     /// # Arguments
     /// * `prompt` - The input text prompt to generate from
     /// * `sample_len` - Maximum number of tokens to generate
     /// * `stream` - An async channel or stream to send generated tokens
-    pub async fn run<S>(&mut self, prompt: &str, sample_len: usize, stream: &mut S) -> Result<()> 
-    where 
-        S: tokio::io::AsyncWrite + Unpin 
+    pub async fn run<S>(&mut self, prompt: &str, sample_len: usize, stream: &mut S) -> Result<()>
+    where
+        S: tokio::io::AsyncWrite + Unpin,
     {
         // Encode the prompt text into tokens
         let tokens = self
@@ -88,7 +87,7 @@ impl TextGeneration {
         // Initialize token tracking
         let mut tokens = tokens.get_ids().to_vec();
         let mut generated_tokens = 0usize;
-        
+
         // Get the end of text token
         let eos_token = match self.tokenizer.get_token("<|endoftext|>") {
             Some(token) => token,
@@ -107,7 +106,7 @@ impl TextGeneration {
             // Get context size - full context for first iteration, single token after
             let context_size = if index > 0 { 1 } else { tokens.len() };
             let ctxt = &tokens[tokens.len().saturating_sub(context_size)..];
-            
+
             // Prepare input tensor
             let input = Tensor::new(ctxt, &self.device)?.unsqueeze(0)?;
 
@@ -121,7 +120,7 @@ impl TextGeneration {
 
             // Process logits
             let logits = logits.squeeze(0)?.to_dtype(DType::F32)?;
-            
+
             // Apply repeat penalty if configured
             let logits = if self.repeat_penalty == 1. {
                 logits

@@ -4,30 +4,26 @@ extern crate intel_mkl_src;
 #[cfg(feature = "accelerate")]
 extern crate accelerate_src;
 
-use ai_cli::{AiCliArgs, AiCli, Settings};
+use ai_cli::{AiCli, AiCliArgs, Settings};
 use anyhow::Result;
 use clap::Parser;
-use tracing::info;
+use tracing::{error, info};
 use tracing_log::AsTrace;
 use tracing_subscriber::FmtSubscriber;
 
 fn main() -> Result<()> {
     use tracing_chrome::ChromeLayerBuilder;
     use tracing_subscriber::prelude::*;
-    
+
     let start = std::time::Instant::now();
-    
+
     let ai_cli_args = AiCliArgs::parse();
-    
+
     let settings = Settings::new()?;
     //convert settings.verbosity String into Levelfilter
     // set filter to ai_cli if present, else, from settings
-    let log_level_filter = ai_cli_args
-        .verbose
-        .log_level_filter();
-        
-        
-        
+    let log_level_filter = ai_cli_args.verbose.log_level_filter();
+
     // a builder for `FmtSubscriber`.
     let subscriber = FmtSubscriber::builder()
         // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
@@ -38,9 +34,11 @@ fn main() -> Result<()> {
         // .with_target(true)
         // completes the builder.
         .finish();
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("setting default subscriber failed");
-    info!("Initialized args, settings, and logging in {:?}", start.elapsed());
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    info!(
+        "Initialized args, settings, and logging in {:?}",
+        start.elapsed()
+    );
     let _guard = if ai_cli_args.tracing {
         let (chrome_layer, guard) = ChromeLayerBuilder::new().build();
         tracing_subscriber::registry().with(chrome_layer).init();
@@ -48,12 +46,18 @@ fn main() -> Result<()> {
     } else {
         None
     };
-    
-    
+
     let ai_cli = AiCli::new(settings, ai_cli_args, Some(start));
-    
-    ai_cli.exec()?;
-    
+
+    match ai_cli.exec() {
+        Ok(_) => {}
+        Err(e) => {
+            error!("{:?}", e);
+            error!("Exiting due to error");
+            return Ok(());
+        }
+    }
+
     Ok(())
 }
 

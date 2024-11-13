@@ -1,21 +1,20 @@
-
-
+mod ai_backend;
 mod command;
+mod constants;
+mod settings;
 mod text_generation;
 mod token_output_stream;
-mod settings;
 // ... other modules
 
 // This is the only export from the crate. It is marked hidden and
 // is not part of the public API.
+use candle_core::utils::{cuda_is_available, metal_is_available};
+use candle_core::{Device, Result};
 #[doc(hidden)]
-pub use command::{AiCli,AiCliArgs};
+pub use command::{AiCli, AiCliArgs};
 #[doc(hidden)]
 pub use settings::Settings;
-use candle_core::utils::{cuda_is_available, metal_is_available};
-use candle_core::{Device, Result, Tensor};
 use tracing::warn;
-
 
 /// Loads the safetensors files for a model from the hub based on a json index file.
 pub fn hub_load_safetensors(
@@ -43,7 +42,6 @@ pub fn hub_load_safetensors(
         .collect::<Result<Vec<_>>>()?;
     Ok(safetensors_files)
 }
-
 
 pub fn device(cpu: bool) -> Result<Device> {
     if cpu {
