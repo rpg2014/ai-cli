@@ -26,6 +26,7 @@ config = "0.14.1"
 serde = "1.0.215"
 rand = "0.8.5"
 aws-config = {version = "1.5.10",features = ["behavior-version-latest"]}
+indicatif = "0.17.9"
 
 [features]
 accelerate = ["dep:accelerate-src", "candle-core/accelerate", "candle-nn/accelerate", "candle-transformers/accelerate"]

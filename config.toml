@@ -1,9 +1,9 @@
 # Example config file for AI CLI
 
-# verbosity = 'info'
-ai_backend = 'bedrock'
-[aws_config]
-region = 'us-west-2'
+# verbosity = "info"
+ai_backend = "bedrock"
+[aws_settings]
+region = "us-west-2"
 [model_config]
 # temperature = 0.7
 # top_p = 0.9

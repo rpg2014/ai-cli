@@ -1,10 +1,11 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
-use crate::ai_backend::AiBackend;
+use crate::ai_backend::{self, AiBackend};
 use crate::ai_backend::{BedrockAiBackend, LocalAiBackend};
 use anyhow::{Error as E, Result};
 use clap::{Parser, ValueEnum};
 use clap_verbosity_flag::LogLevel;
+use indicatif::{ProgressBar, ProgressStyle};
 
 
 use crate::settings::Settings;
@@ -85,20 +86,56 @@ impl AiCli {
             self.settings.model_config.repeat_penalty,
             self.settings.model_config.repeat_last_n
         );
-
-        let local_model: Box<dyn AiBackend> = match self.args.ai_backend.as_deref() {
-            Some("bedrock") => {
+        // get from args, fallback to settings obj
+        let backend = match self.args.ai_backend {
+            Some(ref backend) => backend,
+            None => &self.settings.ai_backend,
+        };
+        
+        
+        let local_model: Box<dyn AiBackend> = match backend.as_str() {
+            "bedrock" => {
                 info!("Using Bedrock AI backend");
                 Box::new(BedrockAiBackend::new(self.settings, self.args, self.start))
             }
-            Some("local") | None => {
+            "local" => {
                 info!("Using Local AI backend");
                 Box::new(LocalAiBackend::new(self.settings, self.args, self.start))
             }
-            Some(backend) => return Err(E::msg(format!("Unknown AI backend: {}", backend))),
+            _ => {
+                return Err(E::msg(format!(
+                    "Unknown backend: {}",
+                    backend
+                )));
+            }
         };
         info!("Beginning inference");
+        
+        let bar = ProgressBar::new_spinner();
+        bar.set_style(ProgressStyle::with_template("{spinner:.green} {msg}").unwrap().tick_strings(&[
+            "⣾",
+			"⣽",
+			"⣻",
+			"⢿",
+			"⡿",
+			"⣟",
+			"⣯",
+			"⣷",
+            // full block
+            "⣿"
+// "▹▹▹▹▹",
+//                 "▸▹▹▹▹",
+//                 "▹▸▹▹▹",
+//                 "▹▹▸▹▹",
+//                 "▹▹▹▸▹",
+//                 "▹▹▹▹▸",
+//                 "▪▪▪▪▪",
+            ]));
+        bar.tick();
+        bar.enable_steady_tick(Duration::from_millis(100));
+        bar.set_message("Thinking...");
         let result = local_model.invoke()?; //print result
+        bar.finish_with_message("Done");
         info!("response time: {:?}", self.start.elapsed());
         info!("{:?}", result);
         println!("{}", result);
