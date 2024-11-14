@@ -36,9 +36,9 @@ pub struct ModelConfig {
 
 impl Settings {
     pub fn new() -> Result<Self, config::ConfigError> {
-        let config_path = dirs::config_dir()  // Gets the config directory cross-platform
+        let config_path = dirs::home_dir()  // Gets the config directory cross-platform
         .map(|mut path| {
-            path.push("your_program_name");  // Replace with your actual program name
+            path.push("ai");  // Replace with your actual program name
             path.push("config");
             path
         })
