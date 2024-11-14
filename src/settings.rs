@@ -1,5 +1,9 @@
+use std::path::PathBuf;
+
 use config::Config;
 use serde;
+
+use crate::constants::DEFAULT_CONFIG_CONTENT;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Settings {
@@ -32,8 +36,28 @@ pub struct ModelConfig {
 
 impl Settings {
     pub fn new() -> Result<Self, config::ConfigError> {
-        let settings = Config::builder()
-            .add_source(config::File::with_name("config").required(false))
+        let config_path = dirs::config_dir()  // Gets the config directory cross-platform
+        .map(|mut path| {
+            path.push("your_program_name");  // Replace with your actual program name
+            path.push("config");
+            path
+        })
+        .unwrap_or_else(|| PathBuf::from("config"));  // Fallback to local config
+
+    // Create the directory if it doesn't exist
+    if let Some(parent) = config_path.parent() {
+        std::fs::create_dir_all(parent).ok();  // Ignore error if dir already exists
+    }
+    // Check if config file exists, if not create it with defaults
+    if !config_path.with_extension("toml").exists() {
+        std::fs::write(
+            config_path.with_extension("toml"),
+            DEFAULT_CONFIG_CONTENT
+        ).ok();  // Using ok() to ignore write errors
+    }
+
+    let settings = Config::builder()
+            .add_source(config::File::with_name(config_path.to_str().unwrap()).required(false))
             .add_source(config::Environment::with_prefix("AI_CLI"))
             .set_default("model_config.verbose_prompt", false)?
             .set_default("model_config.temperature", 0.8_f64)?

@@ -1,5 +1,5 @@
 [package]
-name = "ai-cli"
+name = "ai"
 version = "0.1.0"
 edition = "2021"
 
@@ -27,7 +27,9 @@ serde = "1.0.215"
 rand = "0.8.5"
 aws-config = {version = "1.5.10",features = ["behavior-version-latest"]}
 indicatif = "0.17.9"
+dirs = "5.0.1"
 
 [features]
 accelerate = ["dep:accelerate-src", "candle-core/accelerate", "candle-nn/accelerate", "candle-transformers/accelerate"]
 mkl = ["dep:intel-mkl-src", "candle-core/mkl", "candle-nn/mkl", "candle-transformers/mkl"]
+metal = ["candle-core/metal", "candle-nn/metal"]

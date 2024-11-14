@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use crate::ai_backend::{self, AiBackend};
+use crate::ai_backend::AiBackend;
 use crate::ai_backend::{BedrockAiBackend, LocalAiBackend};
 use anyhow::{Error as E, Result};
 use clap::{Parser, ValueEnum};
@@ -39,7 +39,7 @@ impl LogLevel for ConfigLogLevel {
 }
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None, name = "ai")]
 pub struct AiCliArgs {
     /// Run on CPU rather than on GPU.
     #[arg(long)]

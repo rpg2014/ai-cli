@@ -4,7 +4,7 @@ extern crate intel_mkl_src;
 #[cfg(feature = "accelerate")]
 extern crate accelerate_src;
 
-use ai_cli::{AiCli, AiCliArgs, Settings};
+use ai::{AiCli, AiCliArgs, Settings};
 use anyhow::Result;
 use clap::Parser;
 use tracing::{error, info};
