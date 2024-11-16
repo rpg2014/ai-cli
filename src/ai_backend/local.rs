@@ -1,9 +1,12 @@
 use std::time::Instant;
 
-use tracing::info;
 use anyhow::{Error as E, Result};
+use clap::ValueEnum;
+use serde::Deserialize;
+use tracing::info;
 
 use candle_core::{DType, Device};
+use candle_nn::VarBuilder;
 use candle_transformers::models::mixformer::Config;
 use candle_transformers::models::phi::{Config as PhiConfig, Model as Phi};
 use candle_transformers::models::phi3::{Config as Phi3Config, Model as Phi3};
@@ -11,14 +14,20 @@ use candle_transformers::models::quantized_mixformer::MixFormerSequentialForCaus
 use hf_hub::api::sync::{Api, ApiRepo};
 use hf_hub::{Repo, RepoType};
 use tokenizers::Tokenizer;
-use candle_nn::VarBuilder;
 
-use crate::command::WhichModel;
+use super::common::AiBackend;
 use crate::text_generation::{Model, TextGeneration};
 use crate::AiCliArgs;
 use crate::Settings;
 use crate::{device, hub_load_safetensors};
-use super::common::AiBackend;
+
+#[derive(Clone, Copy, Debug, ValueEnum, PartialEq, Eq, Deserialize)]
+pub enum WhichModel {
+    #[value(name = "2")]
+    V2,
+    #[value(name = "3")]
+    V3,
+}
 
 pub struct LocalAiBackend {
     settings: Settings,
@@ -37,24 +46,24 @@ impl LocalAiBackend {
 
     pub fn load_local_model(&self) -> Result<(Model, Tokenizer, Device)> {
         let repo = self.get_repo_for_local_model()?;
-        let tokenizer_filename = match &self.settings.model_config.tokenizer {
+        let tokenizer_filename = match &self.settings.local_model_config.tokenizer {
             Some(file) => std::path::PathBuf::from(file),
-            None => match self.args.model {
+            None => match self.settings.local_model_config.model {
                 WhichModel::V2 | WhichModel::V3 => repo.get("tokenizer.json")?,
             },
         };
-        let filenames = match &self.settings.model_config.weight_file {
+        let filenames = match &self.settings.local_model_config.weight_file {
             Some(weight_file) => vec![std::path::PathBuf::from(weight_file)],
             None => {
-                if self.args.quantized {
-                    match self.args.model {
+                if self.settings.local_model_config.quantized {
+                    match self.settings.local_model_config.model {
                         WhichModel::V2 => vec![repo.get("model-v2-q4k.gguf")?],
                         WhichModel::V3 => anyhow::bail!(
                             "use the quantized or quantized-phi examples for quantized phi-v3"
                         ),
                     }
                 } else {
-                    match self.args.model {
+                    match self.settings.local_model_config.model {
                         WhichModel::V2 => {
                             hub_load_safetensors(&repo, "model.safetensors.index.json")?
                         }
@@ -67,20 +76,20 @@ impl LocalAiBackend {
         };
         let tokenizer = Tokenizer::from_file(tokenizer_filename).map_err(E::msg)?;
 
-        let config = || match self.args.model {
+        let config = || match self.settings.local_model_config.model {
             WhichModel::V2 => Config::v2(),
             WhichModel::V3 => {
                 panic!("use the quantized or quantized-phi examples for quantized phi-v3")
             }
         };
-        let device = device(self.args.cpu)?;
-        let model = if self.args.quantized {
+        let device = device(self.settings.local_model_config.cpu)?;
+        let model = if self.settings.local_model_config.quantized {
             let config = config();
             let vb = candle_transformers::quantized_var_builder::VarBuilder::from_gguf(
                 &filenames[0],
                 &device,
             )?;
-            let model = match self.args.model {
+            let model = match self.settings.local_model_config.model {
                 WhichModel::V2 => QMixFormer::new_v2(&config, vb)?,
                 WhichModel::V3 => {
                     anyhow::bail!("Quantized Phi-3 not supported")
@@ -88,10 +97,10 @@ impl LocalAiBackend {
             };
             Model::Quantized(model)
         } else {
-            let dtype = match &self.settings.model_config.dtype {
+            let dtype = match &self.settings.local_model_config.dtype {
                 Some(dtype) => dtype.parse()?,
                 None => {
-                    if self.args.model == WhichModel::V3 {
+                    if self.settings.local_model_config.model == WhichModel::V3 {
                         device.bf16_default_to_f32()
                     } else {
                         DType::F32
@@ -99,7 +108,7 @@ impl LocalAiBackend {
                 }
             };
             let vb = unsafe { VarBuilder::from_mmaped_safetensors(&filenames, dtype, &device)? };
-            match self.args.model {
+            match self.settings.local_model_config.model {
                 WhichModel::V2 => {
                     let config_filename = repo.get("config.json")?;
                     let config = std::fs::read_to_string(config_filename)?;
@@ -124,26 +133,26 @@ impl LocalAiBackend {
     fn get_repo_for_local_model(&self) -> Result<ApiRepo> {
         info!("Loading the model, parsing model from args and settings");
         let api = Api::new()?;
-        let model_id = match &self.settings.model_config.model_id {
+        let model_id = match &self.settings.local_model_config.model_id {
             Some(model_id) => model_id.to_string(),
             None => {
-                if self.args.quantized {
+                if self.settings.local_model_config.quantized {
                     "lmz/candle-quantized-phi".to_string()
                 } else {
-                    match self.args.model {
+                    match self.settings.local_model_config.model {
                         WhichModel::V2 => "microsoft/phi-2".to_string(),
                         WhichModel::V3 => "microsoft/Phi-3-mini-4k-instruct".to_string(),
                     }
                 }
             }
         };
-        let revision = match &self.settings.model_config.revision {
+        let revision = match &self.settings.local_model_config.revision {
             Some(rev) => rev.to_string(),
             None => {
-                if self.args.quantized {
+                if self.settings.local_model_config.quantized {
                     "main".to_string()
                 } else {
-                    match self.args.model {
+                    match self.settings.local_model_config.model {
                         WhichModel::V2 => "main".to_string(),
                         WhichModel::V3 => "main".to_string(),
                     }
@@ -156,7 +165,7 @@ impl LocalAiBackend {
 }
 
 impl AiBackend for LocalAiBackend {
-    fn invoke(&self) -> Result<String> {
+    fn invoke(&self, prompt: String) -> Result<String> {
         info!(
             "avx: {}, neon: {}, simd128: {}, f16c: {}",
             candle_core::utils::with_avx(),
@@ -170,12 +179,12 @@ impl AiBackend for LocalAiBackend {
         let mut pipeline = TextGeneration::new(
             model,
             tokenizer,
-            self.settings.model_config.seed,
-            self.settings.model_config.temperature,
-            self.settings.model_config.top_p,
-            self.settings.model_config.repeat_penalty,
-            self.settings.model_config.repeat_last_n,
-            self.settings.model_config.verbose_prompt,
+            self.settings.local_model_config.seed,
+            self.settings.local_model_config.temperature,
+            self.settings.local_model_config.top_p,
+            self.settings.local_model_config.repeat_penalty,
+            self.settings.local_model_config.repeat_last_n,
+            self.settings.local_model_config.verbose_prompt,
             &device,
         );
         let mut string_buffer = std::io::Cursor::new(Vec::new());
@@ -184,8 +193,8 @@ impl AiBackend for LocalAiBackend {
             // pass in string buffer stream into run function
             pipeline
                 .run(
-                    &self.args.prompt,
-                    self.settings.model_config.sample_len,
+                    &prompt,
+                    self.settings.local_model_config.sample_len,
                     &mut string_buffer,
                 )
                 .await

@@ -11,7 +11,7 @@ mod token_output_stream;
 use candle_core::utils::{cuda_is_available, metal_is_available};
 use candle_core::{Device, Result};
 #[doc(hidden)]
-pub use command::{AiCli, AiCliArgs};
+pub use command::{AiCli, AiCliArgs, AiCliCommands};
 #[doc(hidden)]
 pub use settings::Settings;
 use tracing::warn;

@@ -37,7 +37,23 @@ pub const DEFAULT_CONFIG_CONTENT: &'static str = r#"# AI CLI Configuration
 # AI backend to use (default: "local")
 # ai_backend = "local"
 
+[aws_settings]
+# Optional AWS profile name
+# profile = "default"
+
+# AWS region (default: "us-east-1")
+# region = "us-east-1"
+
 [model_config]
+# Whether to run on the cpu by default or not (default: false)
+# cpu = false
+
+# Which Phi model to use. V2 or V3
+# model = "V2"
+
+# Whether to use the quantized phi models or not (default: true)
+# quantized = true
+
 # Whether to use verbose prompting (default: false)
 # verbose_prompt = false
 
@@ -74,10 +90,4 @@ pub const DEFAULT_CONFIG_CONTENT: &'static str = r#"# AI CLI Configuration
 # Data type for model operations (default: "f32")
 # dtype = "f32"
 
-[aws_settings]
-# Optional AWS profile name
-# profile = "default"
-
-# AWS region (default: "us-east-1")
-# region = "us-east-1"
 "#;

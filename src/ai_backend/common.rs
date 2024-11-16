@@ -1,5 +1,5 @@
 use anyhow::Result;
 
 pub trait AiBackend {
-    fn invoke(&self) -> Result<String>;
+    fn invoke(&self, prompt: String) -> Result<String>;
 }

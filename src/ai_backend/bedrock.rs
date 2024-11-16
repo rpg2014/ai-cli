@@ -1,19 +1,19 @@
 use std::time::Instant;
 
+use aws_config::{BehaviorVersion, Region};
 use aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError;
 use aws_sdk_bedrockruntime::types::{
     ContentBlock, ConversationRole, ConverseStreamOutput, Message, SystemContentBlock,
 };
 use aws_sdk_bedrockruntime::Client;
-use aws_config::{BehaviorVersion, Region};
 
-use tracing::{debug, info};
 use anyhow::Result;
+use tracing::{debug, info};
 
+use super::common::AiBackend;
 use crate::constants::SYSTEM_PROMPT;
 use crate::AiCliArgs;
 use crate::Settings;
-use super::common::AiBackend;
 
 pub struct BedrockAiBackend {
     settings: Settings,
@@ -36,44 +36,44 @@ impl BedrockAiBackend {
         Ok(match output {
             ConverseStreamOutput::ContentBlockDelta(event) => match event.delta() {
                 Some(delta) => {
-                    debug!("{:?}",delta);
+                    debug!("{:?}", delta);
                     delta.as_text().cloned().unwrap_or_else(|_| "".into())
-                },
+                }
                 None => "".into(),
             },
             // rest log and return empty string
             ConverseStreamOutput::MessageStart(e) => {
                 debug!("MessageStart: {:?}", e);
                 "".into()
-            },
+            }
             ConverseStreamOutput::MessageStop(e) => {
                 debug!("MessageStop: {:?}", e);
                 "".into()
-            },
-            ConverseStreamOutput::Metadata(e) =>{
+            }
+            ConverseStreamOutput::Metadata(e) => {
                 debug!("Metadata: {:?}", e);
                 "".into()
-            },
+            }
             ConverseStreamOutput::ContentBlockStart(e) => {
                 debug!("ContentBlockStart: {:?}", e);
                 "".into()
-            },
+            }
             ConverseStreamOutput::ContentBlockStop(e) => {
                 debug!("ContentBlockStop: {:?}", e);
                 "".into()
-            },
+            }
             _ => {
                 debug!("Received non-content block delta");
                 "".into()
-            },
+            }
         })
     }
 }
 
 impl AiBackend for BedrockAiBackend {
-    fn invoke(&self) -> Result<String> {
+    fn invoke(&self, prompt: String) -> Result<String> {
         // Clone the necessary fields to move into the async block
-        let prompt = self.args.prompt.clone();
+        let prompt = prompt.clone();
         let region = String::from(self.settings.aws_settings.region.as_str());
         info!("Prompt input is: {}", prompt);
         info!("Using region: {}", region);
@@ -96,7 +96,9 @@ impl AiBackend for BedrockAiBackend {
                         .build()
                         .map_err(|_| anyhow::anyhow!("failed to build message"))?,
                 )
-                .set_system(Some(vec![SystemContentBlock::Text(SYSTEM_PROMPT.to_string())]))
+                .set_system(Some(vec![SystemContentBlock::Text(
+                    SYSTEM_PROMPT.to_string(),
+                )]))
                 .send()
                 .await
                 .map_err(|e| anyhow::anyhow!("Failed to send message: {:?}", e))?;
