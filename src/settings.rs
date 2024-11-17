@@ -1,24 +1,31 @@
 use std::path::PathBuf;
 
+use clap_verbosity_flag::LogLevel;
 use config::Config;
-use serde;
-use tracing::info;
 
 use crate::{ai_backend::local::WhichModel, constants::DEFAULT_CONFIG_CONTENT};
 
+/// Top Level settings object
 #[derive(Debug, serde::Deserialize)]
 pub struct Settings {
+    /// Verbosity setting, CLI arg takes precident 
     pub verbosity: Option<String>,
+    // Which AI backend to use by default, bedrock or local
     pub ai_backend: String,
+    /// The local model configuration
     pub local_model_config: LocalModelConfig,
+    /// Various AWS setting such as profile (not respected yet) and region
     pub aws_settings: AwsSettings,
 }
+
+/// AWS related settings
 #[derive(Debug, serde::Deserialize)]
 pub struct AwsSettings {
     pub profile: Option<String>,
     pub region: String,
 }
 
+/// Config options for the local LLM setting
 #[derive(Debug, serde::Deserialize)]
 pub struct LocalModelConfig {
     /// Run on CPU rather than on GPU.
@@ -64,13 +71,13 @@ impl Settings {
                 path
             })
             .unwrap_or_else(|| PathBuf::from("config")); // Fallback to local config
-        // println!("Using config path: {:?}", config_path);
 
         // create ~/.config/ai if it doesn't exist
         let config_parent_dir = config_path.parent().unwrap();
         if !config_parent_dir.exists() {
+            // info! doesnn't work here as this get's run before we set up the log subscriber
             println!("Creating config directory: {:?}", &config_parent_dir);
-            std::fs::create_dir_all(&config_parent_dir).unwrap();
+            std::fs::create_dir_all(config_parent_dir).unwrap();
         }
 
         // Check if config file exists, if not create it with defaults
@@ -80,7 +87,6 @@ impl Settings {
             std::fs::write(&config_file, DEFAULT_CONFIG_CONTENT)
                 .expect("Failed to write config file");
         }
-
 
         let settings = Config::builder()
             .add_source(config::File::with_name(config_path.to_str().unwrap()).required(false))
@@ -101,5 +107,25 @@ impl Settings {
             .build()?;
 
         settings.try_deserialize()
+    }
+}
+
+#[derive(Debug)]
+pub struct ConfigLogLevel {}
+
+impl LogLevel for ConfigLogLevel {
+    fn default() -> Option<clap_verbosity_flag::Level> {
+        // read from settings options
+        let settings = Settings::new().unwrap();
+        let log_level = settings.verbosity.unwrap_or_else(|| "error".to_string());
+        let level = match log_level.as_str() {
+            "error" => Some(clap_verbosity_flag::Level::Error),
+            "warn" => Some(clap_verbosity_flag::Level::Warn),
+            "info" => Some(clap_verbosity_flag::Level::Info),
+            "debug" => Some(clap_verbosity_flag::Level::Debug),
+            "trace" => Some(clap_verbosity_flag::Level::Trace),
+            _ => Some(clap_verbosity_flag::Level::Error),
+        };
+        level
     }
 }

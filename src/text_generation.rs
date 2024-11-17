@@ -3,7 +3,7 @@ use crate::token_output_stream;
 use anyhow::{Error as E, Result};
 use candle_core::{DType, Device, IndexOp, Tensor};
 use candle_transformers::generation::LogitsProcessor;
-use candle_transformers::models::mixformer::MixFormerSequentialForCausalLM as MixFormer;
+// use candle_transformers::models::mixformer::MixFormerSequentialForCausalLM as MixFormer;
 use candle_transformers::models::phi::Model as Phi;
 use candle_transformers::models::phi3::Model as Phi3;
 use candle_transformers::models::quantized_mixformer::MixFormerSequentialForCausalLM as QMixFormer;
@@ -13,7 +13,7 @@ use tokio::io::AsyncWriteExt;
 use tracing::{debug, info};
 
 pub enum Model {
-    MixFormer(MixFormer),
+    // MixFormer(MixFormer),
     Phi(Phi),
     Phi3(Phi3),
     Quantized(QMixFormer),
@@ -112,7 +112,7 @@ impl TextGeneration {
 
             // Get logits from the appropriate model
             let logits = match &mut self.model {
-                Model::MixFormer(m) => m.forward(&input)?,
+                // Model::MixFormer(m) => m.forward(&input)?,
                 Model::Phi(m) => m.forward(&input)?,
                 Model::Quantized(m) => m.forward(&input)?,
                 Model::Phi3(m) => m.forward(&input, pos)?.i((.., 0, ..))?,

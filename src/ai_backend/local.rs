@@ -17,7 +17,6 @@ use tokenizers::Tokenizer;
 
 use super::common::AiBackend;
 use crate::text_generation::{Model, TextGeneration};
-use crate::AiCliArgs;
 use crate::Settings;
 use crate::{device, hub_load_safetensors};
 
@@ -31,17 +30,13 @@ pub enum WhichModel {
 
 pub struct LocalAiBackend {
     settings: Settings,
-    args: AiCliArgs,
+
     start: std::time::Instant,
 }
 
 impl LocalAiBackend {
-    pub fn new(settings: Settings, args: AiCliArgs, start: Instant) -> Self {
-        Self {
-            settings,
-            args,
-            start,
-        }
+    pub fn new(settings: Settings, start: Instant) -> Self {
+        Self { settings, start }
     }
 
     pub fn load_local_model(&self) -> Result<(Model, Tokenizer, Device)> {

@@ -1,31 +1,42 @@
-# AI CLI Text Generation Tool
+# AI CLI: Natural Language to Bash One-Liner Generator
 
-A Rust-based command-line interface for text generation using Microsoft's Phi language models.
+A flexible command-line tool that transforms natural language prompts into executable bash one-liners using Large Language Models (LLMs).
 
 ## Features
 
-- Support for Phi-2 and Phi-3 language models
-- Flexible deployment options:
-  - Run on CPU or GPU
-  - Quantized and non-quantized model support
+- Generate bash one-liners from natural language prompts
+- Support for multiple AI backends
+  - Local models
+  - AWS Bedrock
+- Logging and tracing
 - Configurable model parameters
-  - Temperature
-  - Repeat penalty
-  - Sampling length
-- Customizable logging levels
-- Easy prompt-based text generation
+- Cross-platform compatibility (CPU/GPU)
 
 ## Prerequisites
 
 - Rust programming language
 - Cargo package manager
+- (Optional) AWS Bedrock credentials
 
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/ai-cli.git
+git clone https://github.com/rpg2014/ai-cli.git
 cd ai-cli
-cargo build --release
+cargo install --path .
+```
+### Optional features
+
+- `accelerate`: Enable GPU acceleration using the Accelerate library for improved performance - Mac only
+- `mkl`: Use Intel Math Kernel Library (MKL) for optimized computational performance
+- `metal`: Enable GPU acceleration on Apple devices using Metal - Mac only
+- `clipboard`: Automatically copy the generated bash one-liner to your system clipboard
+
+#### Using optional features
+Install the cli with the following command with the features you want:
+
+```bash
+cargo install --path . --features metal,clipboard
 ```
 
 ## Usage
@@ -33,40 +44,64 @@ cargo build --release
 ### Basic Usage
 
 ```bash
-# Generate text with a prompt
-cargo run -- --prompt "Your text prompt here"
+# Generate a bash one-liner from a natural language prompt
+ai create a directory and list its contents
 
-# Specify model version
-cargo run -- --model 2 --prompt "Phi-2 prompt"
-cargo run -- --model 3 --prompt "Phi-3 prompt"
+# Set verbose logging (Defaults to Error, each v drops it down a level (Warn, info, debug, trace))
+ai -vv your prompt
 
-# Run on CPU
-cargo run -- --cpu --prompt "CPU-based generation"
-
-# Use quantized model
-cargo run -- --quantized --prompt "Quantized model generation"
+# Enable performance tracing.  Generates a trace-timestamp.json file that can be loaded into Chrome
+ai --tracing "your prompt"
 ```
 
-### Configuration
+## Available Commands
 
-Configuration can be set in `config.toml`:
-- Model selection
+### Generate
+Generate a bash one-liner based on a natural language prompt.
+
+```bash
+# Basic generation
+ai create a backup of all txt files in the current directory
+
+# With additional options
+ai --backend local list all running docker containers
+
+# Explictly specify the generate command
+ai generate list all files in the directory from largest to smallest
+```
+
+### Config
+Print the current settings, arguments, and log verbosity.
+
+```bash
+# Display current configuration
+ai config
+```
+
+## Configuration
+
+Configuration can be customized in `~/.config/ai/config.toml`:
+- AI backend selection
 - Model parameters
-- Logging verbosity
+- Logging settings
+
+A default config file is written when first launched.  The configuration can also be overridden on a per project bases by putting a `config.toml` file in the current directory.
 
 ## Command-line Options
 
-- `--cpu`: Force CPU usage instead of GPU
-- `--tracing`: Enable performance tracing
-- `--prompt`: Input text prompt for generation
-- `--model`: Model version (2 or 3)
-- `--quantized`: Use quantized model
 - `--verbose`: Set logging verbosity
+- `--tracing`: Enable performance tracing
+- `--backend`: Select AI backend (local/bedrock)
 
-## Model Support
+## Supported Backends
 
-- Phi-2: Non-quantized and quantized support
-- Phi-3: Non-quantized support (experimental)
+- Local AI Models
+- AWS Bedrock
+
+## Performance
+
+- Supports CPU and GPU execution
+- Chrome tracing for performance analysis
 
 ## License
 

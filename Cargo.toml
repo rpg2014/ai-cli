@@ -1,6 +1,6 @@
 [package]
 name = "ai"
-version = "0.2.0"
+version = "1.0.0"
 edition = "2021"
 
 [dependencies]
@@ -28,8 +28,10 @@ rand = "0.8.5"
 aws-config = {version = "1.5.10",features = ["behavior-version-latest"]}
 indicatif = "0.17.9"
 dirs = "5.0.1"
+arboard = {version = "3.4.1", optional = true}
 
 [features]
 accelerate = ["dep:accelerate-src", "candle-core/accelerate", "candle-nn/accelerate", "candle-transformers/accelerate"]
 mkl = ["dep:intel-mkl-src", "candle-core/mkl", "candle-nn/mkl", "candle-transformers/mkl"]
 metal = ["candle-core/metal", "candle-nn/metal"]
+clipboard = ["dep:arboard"]

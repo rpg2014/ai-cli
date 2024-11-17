@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use aws_config::{BehaviorVersion, Region};
 use aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError;
 use aws_sdk_bedrockruntime::types::{
@@ -12,27 +10,20 @@ use tracing::{debug, info};
 
 use super::common::AiBackend;
 use crate::constants::SYSTEM_PROMPT;
-use crate::AiCliArgs;
 use crate::Settings;
 
 pub struct BedrockAiBackend {
     settings: Settings,
-    args: AiCliArgs,
-    start: std::time::Instant,
 }
 
 impl BedrockAiBackend {
-    pub fn new(settings: Settings, args: AiCliArgs, start: Instant) -> Self {
-        Self {
-            settings,
-            args,
-            start,
-        }
+    pub fn new(settings: Settings) -> Self {
+        Self { settings }
     }
 
     fn get_converse_output_text(
         output: ConverseStreamOutput,
-    ) -> Result<String, ConverseStreamOutputError> {
+    ) -> Result<String, Box<ConverseStreamOutputError>> {
         Ok(match output {
             ConverseStreamOutput::ContentBlockDelta(event) => match event.delta() {
                 Some(delta) => {
@@ -122,7 +113,7 @@ impl AiBackend for BedrockAiBackend {
                                 let string_clone = e
                                     .meta()
                                     .message()
-                                    .unwrap_or_else(|| "Unable to see stream error message")
+                                    .unwrap_or("Unable to see stream error message")
                                     .to_string();
                                 return Err(anyhow::anyhow!(string_clone));
                             }

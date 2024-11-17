@@ -24,10 +24,10 @@ impl TokenOutputStream {
         }
     }
 
-    /// Consumes self and returns the underlying tokenizer
-    pub fn into_inner(self) -> tokenizers::Tokenizer {
-        self.tokenizer
-    }
+    // /// Consumes self and returns the underlying tokenizer
+    // pub fn into_inner(self) -> tokenizers::Tokenizer {
+    //     self.tokenizer
+    // }
 
     /// Helper function to decode a slice of tokens into a String
     /// Returns an error if decoding fails
@@ -80,10 +80,10 @@ impl TokenOutputStream {
         }
     }
 
-    /// Decodes all tokens processed so far into a single String
-    pub fn decode_all(&self) -> Result<String> {
-        self.decode(&self.tokens)
-    }
+    // /// Decodes all tokens processed so far into a single String
+    // pub fn decode_all(&self) -> Result<String> {
+    //     self.decode(&self.tokens)
+    // }
 
     /// Looks up the token ID for a given string in the vocabulary
     pub fn get_token(&self, token_s: &str) -> Option<u32> {
@@ -95,10 +95,10 @@ impl TokenOutputStream {
         &self.tokenizer
     }
 
-    /// Resets the stream state by clearing tokens and indices
-    pub fn clear(&mut self) {
-        self.tokens.clear();
-        self.prev_index = 0;
-        self.current_index = 0;
-    }
+    // /// Resets the stream state by clearing tokens and indices
+    // pub fn clear(&mut self) {
+    //     self.tokens.clear();
+    //     self.prev_index = 0;
+    //     self.current_index = 0;
+    // }
 }

@@ -3,57 +3,55 @@ use std::time::{Duration, Instant};
 use crate::ai_backend::AiBackend;
 use crate::ai_backend::{BedrockAiBackend, LocalAiBackend};
 use anyhow::{Error as E, Result};
-use clap::{Parser, Subcommand, ValueEnum};
-use clap_verbosity_flag::{Level, LogLevel};
+use clap::{Parser, Subcommand};
+use clap_verbosity_flag::Level;
 use indicatif::{ProgressBar, ProgressStyle};
 
-use crate::settings::Settings;
+use crate::settings::{ConfigLogLevel, Settings};
 use tracing::info;
 
-#[derive(Clone, ValueEnum, Debug, Subcommand)]
+#[derive(Clone, Debug, Subcommand)]
 pub enum AiCliCommands {
+    /// Prints the Settings, arguments, and the log verbosity
     Config,
-    Chat
-    // Image,
-    // Code,
-}
-
-#[derive(Debug)]
-pub struct ConfigLogLevel {}
-
-impl LogLevel for ConfigLogLevel {
-    fn default() -> Option<clap_verbosity_flag::Level> {
-        // read from settings options
-        let settings = Settings::new().unwrap();
-        let log_level = settings.verbosity.unwrap_or_else(|| "error".to_string());
-        let level = match log_level.as_str() {
-            "error" => Some(clap_verbosity_flag::Level::Error),
-            "warn" => Some(clap_verbosity_flag::Level::Warn),
-            "info" => Some(clap_verbosity_flag::Level::Info),
-            "debug" => Some(clap_verbosity_flag::Level::Debug),
-            "trace" => Some(clap_verbosity_flag::Level::Trace),
-            _ => Some(clap_verbosity_flag::Level::Error),
-        };
-        level
-    }
+    /// Generate a bash one liner based off of the prompt
+    Generate,
 }
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None, name = "ai")]
 pub struct AiCliArgs {
-    /// Enable tracing (generates a trace-timestamp.json file).
+    /// Enable tracing functionality which will generate a trace-timestamp.json file
+    /// containing detailed execution information for debugging and profiling. Load into Chrome to view
     #[arg(long, short)]
     pub tracing: bool,
 
+    /// Specify which AI backend to use for processing requests:
+    /// - "bedrock": Use Amazon Bedrock managed AI service
+    /// - "local": Use local LLM model (Phi 2 or 3) pulled from Hugging face
+    /// 
+    /// If not specified, the backend will be read from config file, defaulting to "local"
     #[arg(long, short = 'b')]
     pub ai_backend: Option<String>,
 
+    /// Control log output verbosity level:
+    /// - v: warnings
+    /// - vv: info
+    /// - vvv: debug
+    /// - vvvv: trace
+    /// 
+    /// Default level is error if not specified, overrides the config setting
     #[command(flatten)]
     pub verbose: clap_verbosity_flag::Verbosity<ConfigLogLevel>,
 
+    /// Specify a command to execute. Currently supported commands:
+    /// - config: Display current configuration settings
+    /// - generate: Generate a bash script based off of the prompt (default)
     #[command(subcommand)]
     pub command: Option<AiCliCommands>,
-    
+
+    /// The input prompt/query to send to the AI model when using generate mode.
+    /// Multiple words can be provided and will be joined into a single prompt.
     #[arg(trailing_var_arg = true)]
     pub other_args: Vec<String>,
 }
@@ -94,7 +92,7 @@ impl AiCli {
             Some(_) | None => {
                 // check prompt is not empty
                 if self.prompt.is_empty() {
-                    return Err(anyhow::anyhow!("Prompt is empty"))
+                    return Err(anyhow::anyhow!("Prompt is empty"));
                 }
                 info!(
                     "temp: {:.2} repeat-penalty: {:.2} repeat-last-n: {}",
@@ -111,11 +109,11 @@ impl AiCli {
                 let local_model: Box<dyn AiBackend> = match backend.as_str() {
                     "bedrock" => {
                         info!("Using Bedrock AI backend");
-                        Box::new(BedrockAiBackend::new(self.settings, self.args, self.start))
+                        Box::new(BedrockAiBackend::new(self.settings))
                     }
                     "local" => {
                         info!("Using Local AI backend");
-                        Box::new(LocalAiBackend::new(self.settings, self.args, self.start))
+                        Box::new(LocalAiBackend::new(self.settings, self.start))
                     }
                     _ => {
                         return Err(E::msg(format!("Unknown backend: {}", backend)));
@@ -132,12 +130,12 @@ impl AiCli {
                             .tick_strings(&[
                                 "⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾", // full block
                                 "⣿", // "▹▹▹▹▹",
-                                    //                 "▸▹▹▹▹",
-                                    //                 "▹▸▹▹▹",
-                                    //                 "▹▹▸▹▹",
-                                    //                 "▹▹▹▸▹",
-                                    //                 "▹▹▹▹▸",
-                                    //                 "▪▪▪▪▪",
+                                     //                 "▸▹▹▹▹",
+                                     //                 "▹▸▹▹▹",
+                                     //                 "▹▹▸▹▹",
+                                     //                 "▹▹▹▸▹",
+                                     //                 "▹▹▹▹▸",
+                                     //                 "▪▪▪▪▪",
                             ]),
                     );
                     temp_bar.tick();
@@ -153,6 +151,10 @@ impl AiCli {
                 info!("response time: {:?}", self.start.elapsed());
                 info!("{:?}", result);
                 println!("{}", result);
+                #[cfg(feature = "clipboard")]{
+                    let mut clipboard = arboard::Clipboard::new()?;
+                    clipboard.set_text(result)?;
+                }
                 Ok(())
             }
         }

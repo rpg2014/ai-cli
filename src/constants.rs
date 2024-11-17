@@ -29,7 +29,7 @@ Example format:
 Human: Find all PDF files modified in the last 24 hours
 Assistant: find . -type f -name \"*.pdf\" -mtime -1";
 
-pub const DEFAULT_CONFIG_CONTENT: &'static str = r#"# AI CLI Configuration
+pub const DEFAULT_CONFIG_CONTENT: &str = r#"# AI CLI Configuration
 
 # Optional verbosity setting
 # verbosity = "info"

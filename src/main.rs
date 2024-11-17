@@ -48,7 +48,7 @@ fn main() -> Result<()> {
     };
 
     let concatenated_args = ai_cli_args.other_args.join(" ");
-    
+
     info!("Prompt is {}", concatenated_args);
     let ai_cli = AiCli::new(
         settings,
@@ -59,7 +59,7 @@ fn main() -> Result<()> {
             .expect("Unable to load log level configuration."),
         concatenated_args,
     );
-    
+
     match ai_cli.exec() {
         Ok(_) => {}
         Err(e) => {
