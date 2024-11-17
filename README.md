@@ -103,10 +103,6 @@ A default config file is written when first launched.  The configuration can als
 - Supports CPU and GPU execution
 - Chrome tracing for performance analysis
 
-## License
-
-[Add your project's license here]
-
 ## Contributing
 
 Contributions are welcome! Please submit pull requests or open issues on the project repository.
